@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from django.views.generic.edit import CreateView
+from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from .models import Cat
 
 # Create your views here.
@@ -21,3 +21,11 @@ class CatCreate(CreateView):
   model = Cat
   fields = '__all__'
   # success_url = '/cats/{id}' # Redirect to the detail page for the cat that was just created
+
+class CatUpdate(UpdateView):
+  model = Cat
+  fields = ['breed', 'description', 'age']
+  
+class CatDelete(DeleteView):
+  model = Cat
+  success_url = '/cats/' # Redirect to the index page for cats after a cat is deleted

@@ -3,7 +3,12 @@
 {% endblock %} {% block content %}
 
 <div class="page-header">
-  <h1>New Cat!</h1>
+  <!-- Check if a cat object exists to determine if we're editing -->
+  {% if cat %}
+    <h1>Editing {{ cat.name }}...</h1>
+  {% else %}
+    <h1>New Cat</h1>
+  {% endif %}
   <img src="{% static 'images/nerd-cat.svg' %}" alt="A cat using a computer" />
 </div>
 
