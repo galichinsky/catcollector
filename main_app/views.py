@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
-from .models import Cat
+from django.views.generic import ListView, DetailView
+from .models import Cat, Toy
 from .forms import FeedingForm
 
 
@@ -48,3 +49,29 @@ class CatUpdate(UpdateView):
 class CatDelete(DeleteView):
     model = Cat
     success_url = "/cats/"  # Redirect to the index page for cats after a cat is deleted
+    
+    
+class ToyCreate(CreateView):
+    model = Toy
+    fields = "__all__"
+    
+    
+class ToyList(ListView):
+    model = Toy
+    
+
+class ToyDetail(DetailView):
+    model = Toy
+    
+
+class ToyUpdate(UpdateView):
+    model = Toy
+    fields = ["name", "color"]
+    
+    
+class ToyDelete(DeleteView):
+    model = Toy
+    success_url = "/toys/"
+    
+
+
