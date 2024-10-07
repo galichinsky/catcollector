@@ -1,17 +1,21 @@
 from django.shortcuts import render, redirect
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.views.generic import ListView, DetailView
+from django.contrib.auth.views import LoginView
+from django.contrib.auth import login
+from django.contrib.auth.forms import UserCreationForm
+import requests
 from .models import Cat, Toy
 from .forms import FeedingForm
 
-
 # Create your views here.
-def home(request):
-    return render(request, "home.html")
+class Home(LoginView):
+    template_name = "home.html"
 
 
 def about(request):
-    return render(request, "about.html")
+    response = requests.get('https://catfact.ninja/fact')
+    return render(request, "about.html", {"fact": response.json().get('fact')})
 
 
 def cat_index(request):
@@ -21,11 +25,15 @@ def cat_index(request):
 
 def cat_detail(request, cat_id):
     cat = Cat.objects.get(id=cat_id)
+    toys_cat_doesnt_have = Toy.objects.exclude(id__in = cat.toys.all().values_list('id'))
     feeding_form = FeedingForm()
     return render(
-        request, "cats/detail.html", {"cat": cat, "feeding_form": feeding_form}
+        request,
+        "cats/detail.html",
+        {"cat": cat, "feeding_form": feeding_form, "toys": toys_cat_doesnt_have },
     )
-    
+
+
 def add_feeding(request, cat_id):
     form = FeedingForm(request.POST)
     if form.is_valid():
@@ -33,12 +41,59 @@ def add_feeding(request, cat_id):
         new_feeding.cat_id = cat_id
         new_feeding.save()
     return redirect("cat-detail", cat_id=cat_id)
+  
+  
+def associate_toy(request, cat_id, toy_id):
+  # Note that you can pass a toy's id instead of the whole toy object
+  # cat = Cat.objects.get(id=cat_id)
+  # cat.toys.add(toy_id)
+  # same as above 2 lines
+  Cat.objects.get(id=cat_id).toys.add(toy_id)
+  return redirect("cat-detail", cat_id=cat_id)
+
+
+def remove_toy(request, cat_id, toy_id):
+  Cat.objects.get(id=cat_id).toys.remove(toy_id)
+  return redirect("cat-detail", cat_id=cat_id)
 
 
 class CatCreate(CreateView):
     model = Cat
-    fields = "__all__"
-    # success_url = '/cats/{id}' # Redirect to the detail page for the cat that was just created
+    fields = ["name", "breed", "description", "age"]
+    
+   # This inherited method is called when a
+    # valid cat form is being submitted
+    def form_valid(self, form):
+        # Assign the logged in user (self.request.user)
+        form.instance.user = self.request.user  # form.instance is the cat
+        # Let the CreateView do its job as usual
+        return super().form_valid(form)
+    
+    
+def signup(request):
+    error_message = ''
+    if request.method == 'POST':
+        # This is how to create a 'user' form object
+        # that includes the data from the browser
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            # This will add the user to the database
+            user = form.save()
+            # This is how we log a user in
+            login(request, user)
+            return redirect('cat-index')
+        else:
+            error_message = 'Invalid sign up - try again'
+    # A bad POST or a GET request, so render signup.html with an empty form
+    form = UserCreationForm()
+    context = {'form': form, 'error_message': error_message}
+    return render(request, 'signup.html', context)
+    # Same as: 
+    # return render(
+    #     request, 
+    #     'signup.html',
+    #     {'form': form, 'error_message': error_message}
+    # )
 
 
 class CatUpdate(UpdateView):
@@ -49,29 +104,26 @@ class CatUpdate(UpdateView):
 class CatDelete(DeleteView):
     model = Cat
     success_url = "/cats/"  # Redirect to the index page for cats after a cat is deleted
-    
-    
+
+
 class ToyCreate(CreateView):
     model = Toy
     fields = "__all__"
-    
-    
+
+
 class ToyList(ListView):
     model = Toy
-    
+
 
 class ToyDetail(DetailView):
     model = Toy
-    
+
 
 class ToyUpdate(UpdateView):
     model = Toy
     fields = ["name", "color"]
-    
-    
+
+
 class ToyDelete(DeleteView):
     model = Toy
     success_url = "/toys/"
-    
-
-
